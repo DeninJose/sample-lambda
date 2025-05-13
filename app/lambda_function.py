@@ -1,3 +1,30 @@
+"""
+Module: lambda_function
+
+This module contains the implementation of an AWS Lambda function that processes
+SQS events containing URLs of PDF files. The function downloads the PDF files,
+uploads them to an S3 bucket, and logs the results.
+
+Functions:
+    - lambda_handler(event, context): Entry point for the Lambda function.
+    - process_record(record): Processes a single SQS record by downloading and
+      uploading the PDF file to S3.
+
+Dependencies:
+    - boto3: AWS SDK for Python, used for interacting with S3.
+    - requests: Library for making HTTP requests to download PDF files.
+    - os, urllib.parse: Standard Python libraries for file and URL handling.
+
+Environment Variables:
+    - BUCKET_NAME: The name of the S3 bucket where the PDF files will be uploaded.
+
+Usage:
+    This module is designed to be deployed as an AWS Lambda function. It expects
+    SQS events as input, with each event containing a 'Records' key that holds
+    a list of messages. Each message should have a 'body' key containing the URL
+    of the PDF file to be processed.
+"""
+
 import os
 from urllib.parse import urlparse
 import boto3
@@ -6,7 +33,23 @@ import requests
 s3 = boto3.client('s3')
 BUCKET_NAME = 'judgement-pdfs'
 
+
+
 def lambda_handler(event, _):
+    """
+    AWS Lambda handler function.
+
+    Processes incoming SQS events containing URLs, downloads the corresponding
+    PDF files, and uploads them to an S3 bucket.
+
+    Args:
+        event (dict): The event data passed to the Lambda function, typically
+                      containing a 'Records' key with a list of SQS messages.
+        _ (object): The Lambda context object (not used in this function).
+
+    Returns:
+        None
+    """
     print(event)
 
     records = event['Records']
@@ -14,6 +57,18 @@ def lambda_handler(event, _):
         process_record(record)
 
 def process_record(record):
+    """
+    Processes a single SQS record.
+
+    Downloads the PDF file from the URL specified in the record, uploads it
+    to the specified S3 bucket, and logs the result.
+
+    Args:
+        record (dict): A single SQS message containing a 'body' key with the URL.
+
+    Returns:
+        None
+    """
     url = record['body']
     if not url:
         print("No URL found.")
@@ -29,10 +84,10 @@ def process_record(record):
         if not filename.endswith('.pdf'):
             filename += '.pdf'
 
-        s3.put_object(Bucket=BUCKET_NAME, Key=filename, Body=pdf_data, ContentType='application/pdf')
+        s3.put_object(Bucket=BUCKET_NAME, Key=filename,
+                      Body=pdf_data, ContentType='application/pdf')
         print(f"Uploaded {filename} to s3://{BUCKET_NAME}/{filename}")
-    except Exception as e:
-        print(f"Error processing {url}: {e}")
-
+    except requests.RequestException as e:
+        print(f"Error downloading {url}: {e}")
     # Call DS API to get the job id
     # Populate dynamodb with the job id
