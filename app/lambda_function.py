@@ -1,8 +1,7 @@
-import json
-import boto3
-import requests
 import os
 from urllib.parse import urlparse
+import boto3
+import requests
 
 s3 = boto3.client('s3')
 BUCKET_NAME = 'judgement-pdfs'
