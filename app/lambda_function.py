@@ -6,7 +6,7 @@ import requests
 s3 = boto3.client('s3')
 BUCKET_NAME = 'judgement-pdfs'
 
-def lambda_handler(event, context):
+def lambda_handler(event, _):
     print(event)
 
     records = event['Records']
@@ -21,7 +21,7 @@ def process_record(record):
 
     # Create pdf and store in S3
     try:
-        response = requests.get(url)
+        response = requests.get(url, timeout=5)
         response.raise_for_status()
         pdf_data = response.content
 

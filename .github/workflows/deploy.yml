@@ -28,7 +28,7 @@ jobs:
 
       - name: Lint Python code
         run: |
-          pylint app/*.py --errors-only
+          pylint app/*.py
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
