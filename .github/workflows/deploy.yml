@@ -16,6 +16,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+
+      - name: Install linting tools
+        run: |
+          pip install pylint
+
+      - name: Lint Python code
+        run: |
+          pylint app/*.py
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
