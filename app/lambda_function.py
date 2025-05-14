@@ -32,7 +32,7 @@ import requests
 
 s3 = boto3.client('s3')
 dynamodb = boto3.resource('dynamodb')
-table = dynamodb.Table('JudgementsTable')
+table = dynamodb.Table('judgements-table')
 
 INPUT_BUCKET_NAME = 'judgement-pdfs'
 OUTPUT_BUCKET_NAME = 'judgement-jsons'
