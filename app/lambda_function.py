@@ -31,8 +31,13 @@ import boto3
 import requests
 
 s3 = boto3.client('s3')
-BUCKET_NAME = 'judgement-pdfs'
+dynamodb = boto3.resource('dynamodb')
+table = dynamodb.Table('JudgementsTable')
 
+INPUT_BUCKET_NAME = 'judgement-pdfs'
+OUTPUT_BUCKET_NAME = 'judgement-jsons'
+
+DS_API_URL = 'http://www.randomnumberapi.com/api/v1.0/random'
 
 
 def lambda_handler(event, _):
@@ -84,10 +89,50 @@ def process_record(record):
         if not filename.endswith('.pdf'):
             filename += '.pdf'
 
-        s3.put_object(Bucket=BUCKET_NAME, Key=filename,
+        s3.put_object(Bucket=INPUT_BUCKET_NAME, Key=filename,
                       Body=pdf_data, ContentType='application/pdf')
-        print(f"Uploaded {filename} to s3://{BUCKET_NAME}/{filename}")
+        print(f"Uploaded {filename} to s3://{INPUT_BUCKET_NAME}/{filename}")
     except requests.RequestException as e:
-        print(f"Error downloading {url}: {e}")
+        print(f"Error calling {url}: {e}")
+        return
+
     # Call DS API to get the job id
-    # Populate dynamodb with the job id
+    try:
+        # S3 path of the uploaded input file
+        input_file_path = f"s3://{INPUT_BUCKET_NAME}/{filename}"
+        # S3 path for the output file
+        output_file_path = f"s3://{OUTPUT_BUCKET_NAME}/output/{filename}"
+        payload = {
+            "input_file_path": input_file_path,
+            "output_file_path": output_file_path
+        }
+        ds_response = requests.post(DS_API_URL, json=payload, timeout=5)
+        ds_response.raise_for_status()
+
+        # Assuming the API returns a JSON with a "job_id" key
+        job_id = ds_response.json().get("job_id")
+        print(f"Received job ID: {job_id}")
+    except requests.RequestException as e:
+        print(f"Error calling {DS_API_URL}: {e}")
+        return
+
+    # Populate DynamoDB with the job ID
+    try:
+        # Use the filename (without extension) as the judgement ID
+        judgement_id = filename.rsplit('.', 1)[0]
+        status = "PROCESSING"
+
+        table.put_item(
+            Item={
+                'judgementId': judgement_id,
+                'status': status,
+                'jobId': job_id
+            }
+        )
+        print(
+            f"Inserted entry into DynamoDB: "
+            f"judgementId={judgement_id}, status={status}, jobId={job_id}"
+        )
+    except Exception as e:
+        print(f"Error inserting into DynamoDB: {e}")
+        return
