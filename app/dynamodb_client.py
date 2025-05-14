@@ -7,7 +7,6 @@ securely obtain credentials and provides error handling for common issues.
 """
 
 import boto3
-from botocore.exceptions import BotoCoreError, ClientError
 
 class DynamoDBClient:
     """
@@ -36,6 +35,26 @@ class DynamoDBClient:
             table = self.dynamodb.Table(table_name)
             response = table.put_item(Item=item)
             return response
-        except (BotoCoreError, ClientError) as error:
+
+        # pylint: disable=broad-exception-caught
+        except Exception as error:
             print(f"Error putting item into DynamoDB table: {error}")
+            return None
+
+    def get_item(self, table_name, key):
+        """
+        Retrieve an item from a DynamoDB table.
+
+        :param table_name: Name of the DynamoDB table
+        :param key: A dictionary representing the primary key of the item to retrieve
+        :return: The retrieved item as a dictionary, or None if not found
+        """
+        try:
+            table = self.dynamodb.Table(table_name)
+            response = table.get_item(Key=key)
+            return response.get('Item', None)
+
+        # pylint: disable=broad-exception-caught
+        except Exception as error:
+            print(f"Error retrieving item from DynamoDB table: {error}")
             return None

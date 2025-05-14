@@ -92,7 +92,8 @@ def process_record(record):
         s3.put_object(Bucket=INPUT_BUCKET_NAME, Key=filename,
                       Body=pdf_data, ContentType='application/pdf')
         print(f"Uploaded {filename} to s3://{INPUT_BUCKET_NAME}/{filename}")
-    except requests.RequestException as e:
+    # pylint: disable=broad-exception-caught
+    except Exception as e:
         print(f"Error calling {url}: {e}")
         return
 
@@ -112,7 +113,8 @@ def process_record(record):
         # Assuming the API returns a JSON with a "job_id" key
         job_id = ds_response.json().get("job_id")
         print(f"Received job ID: {job_id}")
-    except requests.RequestException as e:
+    # pylint: disable=broad-exception-caught
+    except Exception as e:
         print(f"Error calling {DS_API_URL}: {e}")
         return
 
@@ -133,6 +135,8 @@ def process_record(record):
             f"Inserted entry into DynamoDB: "
             f"judgementId={judgement_id}, status={status}, jobId={job_id}"
         )
+
+    # pylint: disable=broad-exception-caught
     except Exception as e:
         print(f"Error inserting into DynamoDB: {e}")
         return
