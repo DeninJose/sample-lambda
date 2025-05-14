@@ -106,12 +106,14 @@ def process_record(record):
         payload = {
             "input_file_path": input_file_path,
             "output_file_path": output_file_path,
+            # REMOVE THIS LINE
+            "job_id": "1234"
         }
         ds_response = requests.post(DS_API_URL, json=payload, timeout=5)
         ds_response.raise_for_status()
 
         # REPLACE WITH ACTUAL JOB ID
-        job_id = ds_response.json().get("output_file_path")
+        job_id = ds_response.json().get("job_id")
 
         print(f"Received job ID: {job_id}")
     # pylint: disable=broad-exception-caught
