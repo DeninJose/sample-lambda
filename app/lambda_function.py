@@ -37,7 +37,7 @@ table = dynamodb.Table('JudgementsTable')
 INPUT_BUCKET_NAME = 'judgement-pdfs'
 OUTPUT_BUCKET_NAME = 'judgement-jsons'
 
-DS_API_URL = 'http://www.randomnumberapi.com/api/v1.0/random'
+DS_API_URL = 'https://jsonplaceholder.typicode.com/posts'
 
 
 def lambda_handler(event, _):
@@ -105,13 +105,14 @@ def process_record(record):
         output_file_path = f"s3://{OUTPUT_BUCKET_NAME}/output/{filename}"
         payload = {
             "input_file_path": input_file_path,
-            "output_file_path": output_file_path
+            "output_file_path": output_file_path,
         }
         ds_response = requests.post(DS_API_URL, json=payload, timeout=5)
         ds_response.raise_for_status()
 
-        # Assuming the API returns a JSON with a "job_id" key
-        job_id = ds_response.json().get("job_id")
+        # REPLACE WITH ACTUAL JOB ID
+        job_id = ds_response.json().get("output_file_path")
+
         print(f"Received job ID: {job_id}")
     # pylint: disable=broad-exception-caught
     except Exception as e:
@@ -120,7 +121,7 @@ def process_record(record):
 
     # Populate DynamoDB with the job ID
     try:
-        # Use the filename (without extension) as the judgement ID
+        # REPLACE WITH ACTUAL JUDGEMENT ID
         judgement_id = filename.rsplit('.', 1)[0]
         status = "PROCESSING"
 
