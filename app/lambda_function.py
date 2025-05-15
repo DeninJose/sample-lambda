@@ -27,6 +27,7 @@ Usage:
 
 import os
 from urllib.parse import urlparse
+import json
 import boto3
 import requests
 
@@ -74,9 +75,10 @@ def process_record(record):
     Returns:
         None
     """
-    url = record['body']
+    record_body = json.loads(record['body'])
+    url = record_body.get('judgementPdfLink')
     if not url:
-        print("No URL found.")
+        print("Missing judgement URL.")
         return
 
     # Create pdf and store in S3
@@ -89,9 +91,9 @@ def process_record(record):
         if not filename.endswith('.pdf'):
             filename += '.pdf'
 
-        s3.put_object(Bucket=INPUT_BUCKET_NAME, Key=filename,
+        s3.put_object(Bucket=INPUT_BUCKET_NAME, Key=f'judgements/{filename}',
                       Body=pdf_data, ContentType='application/pdf')
-        print(f"Uploaded {filename} to s3://{INPUT_BUCKET_NAME}/{filename}")
+        print(f"Uploaded {filename} to s3://{INPUT_BUCKET_NAME}/judgements/{filename}")
     # pylint: disable=broad-exception-caught
     except Exception as e:
         print(f"Error calling {url}: {e}")
@@ -100,9 +102,9 @@ def process_record(record):
     # Call DS API to get the job id
     try:
         # S3 path of the uploaded input file
-        input_file_path = f"s3://{INPUT_BUCKET_NAME}/{filename}"
+        input_file_path = f"s3://{INPUT_BUCKET_NAME}/judgements/{filename}"
         # S3 path for the output file
-        output_file_path = f"s3://{OUTPUT_BUCKET_NAME}/output/{filename}"
+        output_file_path = f"s3://{OUTPUT_BUCKET_NAME}/judgements/{filename}"
         payload = {
             "input_file_path": input_file_path,
             "output_file_path": output_file_path,
