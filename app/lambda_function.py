@@ -95,7 +95,7 @@ def process_record(record):
     # pylint: disable=broad-exception-caught
     except Exception as e:
         print(f"Error calling {url}: {e}")
-        return
+        raise e
 
     # Call DS API to get the job id
     try:
@@ -119,7 +119,7 @@ def process_record(record):
     # pylint: disable=broad-exception-caught
     except Exception as e:
         print(f"Error calling {DS_API_URL}: {e}")
-        return
+        raise e
 
     # Populate DynamoDB with the job ID
     try:
@@ -142,4 +142,4 @@ def process_record(record):
     # pylint: disable=broad-exception-caught
     except Exception as e:
         print(f"Error inserting into DynamoDB: {e}")
-        return
+        raise e
