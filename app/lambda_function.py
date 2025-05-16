@@ -27,6 +27,7 @@ Usage:
 
 import os
 from urllib.parse import urlparse
+from datetime import datetime
 import json
 import boto3
 import requests
@@ -67,7 +68,8 @@ def process_record(record):
     Processes a single SQS record.
 
     Downloads the PDF file from the URL specified in the record, uploads it
-    to the specified S3 bucket, and logs the result.
+    to the specified S3 bucket, calls the DS API to get a job ID, and updates
+    the DynamoDB table with the job status.
 
     Args:
         record (dict): A single SQS message containing a 'body' key with the URL.
@@ -125,23 +127,64 @@ def process_record(record):
 
     # Populate DynamoDB with the job ID
     try:
-        # REPLACE WITH ACTUAL JUDGEMENT ID
-        judgement_id = filename.rsplit('.', 1)[0]
-        status = "PROCESSING"
+        file_id = get_unique_id_from_url(url)
+        status = "pending ocr"
 
-        table.put_item(
-            Item={
-                'judgementId': judgement_id,
-                'status': status,
-                'jobId': job_id
-            }
+        response = table.update_item(
+            Key={
+                'id': file_id
+            },
+            UpdateExpression='SET #status = :status, #job = :job',
+            ExpressionAttributeNames={
+                '#status': 'status',
+                '#job': 'jobId'
+            },
+            ExpressionAttributeValues={
+                ':status': status,
+                ':job': job_id
+            },
+            ReturnValues='UPDATED_NEW'
         )
+
         print(
-            f"Inserted entry into DynamoDB: "
-            f"judgementId={judgement_id}, status={status}, jobId={job_id}"
+            f"Updated entry {file_id} in DynamoDB"
         )
 
     # pylint: disable=broad-exception-caught
     except Exception as e:
         print(f"Error inserting into DynamoDB: {e}")
         raise e
+
+
+def get_unique_id_from_url(url: str):
+    """
+    Extracts a unique ID from the given URL.
+
+    The unique ID is constructed using the diary number and formatted date
+    extracted from the filename in the URL.
+
+    Args:
+        url (str): The URL containing the filename.
+
+    Returns:
+        str: A unique ID in the format "diary_no_date".
+    """
+    filename = url.split("/")[-1]
+    split = filename.split("_")
+    diary_no = split[0] + split[1]
+    date = format_date(split[-1][:-4])
+    return f"{diary_no}_{date}"
+
+
+def format_date(date_str: str) -> str:
+    """
+    Formats a date string from "dd-MMM-yyyy" to "yyyy-MM-dd".
+
+    Args:
+        date_str (str): The date string in "dd-MMM-yyyy" format.
+
+    Returns:
+        str: The formatted date string in "yyyy-MM-dd" format.
+    """
+    date_obj = datetime.strptime(date_str, "%d-%b-%Y")
+    return date_obj.strftime("%Y-%m-%d")

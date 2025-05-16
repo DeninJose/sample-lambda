@@ -66,6 +66,7 @@ class S3Client:
         except PartialCredentialsError:
             print("Incomplete AWS credentials provided.")
             return False
+        # pylint: disable=broad-exception-caught
         except Exception as e:
             print(f"An error occurred: {e}")
             return False
