@@ -132,7 +132,7 @@ def process_record(record):
 
         response = table.update_item(
             Key={
-                'id': file_id
+                'uniqueId': file_id
             },
             UpdateExpression='SET #status = :status, #job = :job',
             ExpressionAttributeNames={
