@@ -34,6 +34,8 @@ import requests
 
 s3 = boto3.client('s3')
 dynamodb = boto3.resource('dynamodb')
+
+# todo: replace resource names
 table = dynamodb.Table('judgements-table')
 
 INPUT_BUCKET_NAME = 'judgement-pdfs'
@@ -57,6 +59,7 @@ def lambda_handler(event, _):
     Returns:
         None
     """
+    raise Exception("This function is not ready to be deployed yet.")
     print(event)
 
     records = event['Records']
